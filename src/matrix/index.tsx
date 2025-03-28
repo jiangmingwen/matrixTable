@@ -1,12 +1,13 @@
 import { InteractionStateName, PivotSheet, S2CellType, S2DataConfig, S2Event, ViewMeta, Node, CellType, InteractionName, DataCell } from "@antv/s2";
-import { FC, useCallback, useEffect, useRef } from "react";
+import { FC, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import { MatrixDataCell } from "./DataCell";
-import { IMatrixCanvasProps, IS2Options, MatrixField } from "./type";
+import { IImageInfo, IMatrixCanvasProps, IS2Options, MatrixField } from "./type";
 import { MatrixColCell } from "./ColCell";
 import { MatrixRowCell } from "./RowCell";
 import { EmptyKey, getCellKey, getCellKeys, getS2Data, showTooltip } from "./config";
 import { MatrixCornerHeader } from "./CornerCell";
 import { FederatedMouseEvent, FederatedPointerEvent } from "@antv/g";
+import { Exporter } from "./export";
 
 export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
   size = 40,
@@ -28,7 +29,8 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
   tooltip,
   emptyColHeaderText = '列表头为空',
   emptyDataText,
-  emptyRowHeaderText = '行表头为空'
+  emptyRowHeaderText = '行表头为空',
+  ref
 }) => {
   const domRef = useRef<HTMLDivElement | null>(null)
   const s2Instance = useRef<PivotSheet | null>(null)
@@ -46,9 +48,9 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
       //       return new CustomTooltip(spreadsheet,tooltip) as any
       //     }
       // },
-      
+
       style: {
-        
+
         colCell: {
           height: (a) => {
             if (!a) return 120;
@@ -155,7 +157,7 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
       }
       const { config: s2Cfg, options: s2options } = getS2Config(domRef.current)
       const s2 = new PivotSheet(domRef.current, s2Cfg, s2options);
-      
+
       const colHover = (event: FederatedMouseEvent) => {
         showTooltip(s2, event, tooltip)
       }
@@ -212,7 +214,7 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
 
         const cellMeta = cell.getMeta() as unknown as Node
         //@ts-ignore
-        let type: Parameters< IMatrixCanvasProps['onContextMenu']>['0']= 'col'
+        let type: Parameters<IMatrixCanvasProps['onContextMenu']>['0'] = 'col'
         let rowKey: string | undefined
         let colKey: string | undefined
         if (cell instanceof MatrixColCell) {
@@ -241,7 +243,7 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
           colKey = keys[1]
           type = 'data'
         }
-        if(rowKey === EmptyKey || colKey === EmptyKey) return
+        if (rowKey === EmptyKey || colKey === EmptyKey) return
         onContextMenu?.(type, e.clientX, e.clientY, rowKey, colKey)
       }
 
@@ -279,6 +281,18 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
       s2Instance.current.render()
     }
   }, [getS2Config])
+
+  useImperativeHandle(ref, () => ({
+    export() {
+      return new Promise<IImageInfo[]>((resolve) => {
+        if (!s2Instance.current) resolve([])
+        const exporter = new Exporter(s2Instance.current!)
+        exporter.export(cb=> {
+          resolve(cb.toImageList())
+        })
+      })
+    },
+  }))
 
   return <div style={{ width: '100%', height: '100%' }} ref={domRef}></div>
 }
