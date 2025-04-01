@@ -1,4 +1,4 @@
-import {  Group,  Line, Rect, Text, Image } from "@antv/g";
+import { Group, Line, Rect, Text, Image } from "@antv/g";
 import { CornerHeader, SpreadSheet } from "@antv/s2";
 import { ICorCellContent, IS2Options } from "./type";
 
@@ -51,11 +51,22 @@ export class MatrixCornerHeader extends Group {
             for (let i = 0; i < cornerValue.text.length; i++) {
                 this.renderIconText(cornerValue.text[i], cornerValue.rowCount, cornerValue.colCount, i, startY, cornerValue.lineHeight, cornerValue.gap)
             }
+        } else if (cornerValue.type === 'custom') {
+            const value = cornerValue.renderFn(width, height)
+            if (!value.length) return;
+            value.forEach(item => {
+                if (item.type == 'icon') {
+                    this.renderIcon(item.data, item.x, item.y, item.size)
+                } else if (item.type === 'text') {
+                    this.renderText(item.data, item.x, item.y, item.size)
+                }
+            })
         }
     }
 
+
     private getStartPoint(rowCount: number = 2, lineHeight = 16) {
-        const {  height } = this.header.getHeaderConfig();
+        const { height } = this.header.getHeaderConfig();
         let startY = height / 2;
 
         if (rowCount) {
@@ -74,28 +85,33 @@ export class MatrixCornerHeader extends Group {
             this.renderText(cellValue, interval + (index + 1) % rowCount * (perWidth + gap), startY + (Math.floor(index / rowCount) + 1) * lineHeight)
         } else {
             const iconSize = (this.spreadsheet.options as IS2Options)?.headerIconSize ?? 12
-            const image = new Image({
-                style: {
-                    x: interval + (index + 1) % rowCount * (perWidth + gap),
-                    y: startY + (Math.floor(index / rowCount) + 1) * lineHeight - iconSize/2,
-                    width: iconSize,
-                    height: iconSize,
-                    src: cellValue.icon,
-                },
-            });
-            this.header.appendChild(image);
+            this.renderIcon(cellValue.icon, interval + (index + 1) % rowCount * (perWidth + gap), startY + (Math.floor(index / rowCount) + 1) * lineHeight - iconSize / 2, iconSize)
             this.renderText(cellValue.text, interval + (index + 1) % rowCount * (perWidth + gap) + iconSize, startY + (Math.floor(index / rowCount) + 1) * lineHeight)
 
         }
     }
 
+    private renderIcon(src: string, x: number, y: number, size: number) {
+        const image = new Image({
+            style: {
+                x,
+                y,
+                width: size,
+                height: size,
+                src,
+            },
+        });
+        this.header.appendChild(image);
+    }
 
-    private renderText(text: string, x: number, y: number) {
+
+    private renderText(text: string, x: number, y: number, fontSize?: number) {
         const textShape = new Text({
             style: {
                 x,
                 y,
-                ... this.spreadsheet.theme.cornerCell.text,
+                ...this.spreadsheet.theme.cornerCell.text,
+                fontSize: fontSize ?? this.spreadsheet.theme.cornerCell.text.fontSize,
                 text,
                 maxLines: 1,
                 textAlign: 'initial',

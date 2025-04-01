@@ -63,16 +63,16 @@ function createHeaders(count: number) {
 function App() {
   const checredf = useRef({} as any)
   const instance = useRef<IMatrixCanvasInstance>(null)
-  const [cols, setCols] = useState(createHeaders(1)[1])
+  const [cols, setCols] = useState<any>([])
   const [rows, setRows] = useState<any>([])
 
   return (
     <>
       <button onClick={() => {
-        setRows(createHeaders(4)[0])
+        setRows(createHeaders(15)[0])
       }} >改变行</button>
       <button onClick={() => {
-        setCols(createHeaders(10)[1])
+        setCols(createHeaders(15)[1])
 
       }} >改变列</button>
       <button onClick={() => {
@@ -135,18 +135,18 @@ function App() {
 
             renderCornerCell={() => {
               return {
-                type: 'iconText',
-                text: [{
-                  icon: Icon,
-                  text: '123'
-                },
-                {
-                  icon: Icon,
-                  text: '123'
+                type:'custom',
+                renderFn: (w,h)=>{
+                  return [
+                    {
+                      type: 'text',
+                      data: '123',
+                      x: w/2,
+                      y: h/2,
+                      size: 30
+                    }
+                  ]
                 }
-
-                ],
-                layout: [2, 2, 2]
               }
             }}
 

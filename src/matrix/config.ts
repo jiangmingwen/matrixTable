@@ -75,6 +75,7 @@ export function getS2Data(cols: IDataType[], rows: IDataType[], options: IS2Opti
             colData[col.key].title = i +colData[col.key].title 
         })
     } else {
+      
         // 行列表头都存在 
         for (let i = 0; i < newCols.length; i++) {
             colData[newCols[i].key].title = i +colData[newCols[i].key].title
@@ -85,8 +86,10 @@ export function getS2Data(cols: IDataType[], rows: IDataType[], options: IS2Opti
                     [MatrixField.RowCountField]: newRows[j].key
                 })
                 rowData[newRows[j].key].title = j +rowData[newRows[j].key].title
+                
             }
         }
+        console.log('Total Count',newCols.length*newRows.length)
 
     }
 

@@ -92,8 +92,29 @@ export interface ICornerCellIconText {
     colCount?: number
 }
 
+
+export interface ICustomCornerCell {
+    type: 'icon' | 'text'
+    data: string
+    x: number
+    y: number
+    size: number
+}
+
+
+export type ICustomCornerFn = (width: number, height: number) => ICustomCornerCell[]
+
+export interface ICornerCellCustom {
+    type: 'custom'
+    /** 渲染函数 */
+    renderFn: ICustomCornerFn
+}
+
+
+
+
 /** 角区域渲染 */
-export type ICornerValueCell = ICornerCell | ICornerCellIconText
+export type ICornerValueCell = ICornerCell | ICornerCellIconText | ICornerCellCustom
 
 /** 单元格渲染 */
 export type IValueCell = ICheckboxCell | ITextCell | IImageCell | IEmptyCell
@@ -120,10 +141,10 @@ export interface IMatrixCanvasProps extends ICustomOptions {
     /** 数据选中回调 */
     onDataSelect?: (keys: { rowKey: string, colKey: string }[]) => void
 
-    ref?:  React.ForwardedRef<IMatrixCanvasInstance>
+    ref?: React.ForwardedRef<IMatrixCanvasInstance>
 }
 
-export interface IMatrixCanvasInstance{
+export interface IMatrixCanvasInstance {
     export: () => Promise<IImageInfo[]>
 }
 
