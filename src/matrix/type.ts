@@ -120,7 +120,11 @@ export interface IMatrixCanvasProps extends ICustomOptions {
     /** 数据选中回调 */
     onDataSelect?: (keys: { rowKey: string, colKey: string }[]) => void
 
-    ref?:  React.ForwardedRef<{export: () => Promise<IImageInfo[]>}>
+    ref?:  React.ForwardedRef<IMatrixCanvasInstance>
+}
+
+export interface IMatrixCanvasInstance{
+    export: () => Promise<IImageInfo[]>
 }
 
 export interface ICustomOptions {

@@ -1,5 +1,5 @@
 import { MatrixCanvas } from './matrix'
-import { IDataType } from './matrix/type'
+import { IDataType, IMatrixCanvasInstance } from './matrix/type'
 import Icon from './assets/react.svg'
 import { useRef, useState } from 'react'
 import './App.css'
@@ -62,7 +62,8 @@ function createHeaders(count: number) {
 
 function App() {
   const checredf = useRef({} as any)
-  const [cols, setCols] = useState(createHeaders(10)[1])
+  const instance = useRef<IMatrixCanvasInstance>(null)
+  const [cols, setCols] = useState(createHeaders(1)[1])
   const [rows, setRows] = useState<any>([])
 
   return (
@@ -82,9 +83,15 @@ function App() {
         setCols([])
 
       }} >清空列</button>
+      <button onClick={() => {
+        instance.current?.export().then(res=> {
+          console.log(res,'xx')
+        })
+      }} >导出</button>
       <div style={{ width: '100vw', height: '100vh', display: 'flex' }}>
         <div style={{ width: "1000px", height: "500px" }}>
           <MatrixCanvas colHeaders={cols}
+          ref={instance}
             rowHeaders={rows}
             renderHeaderIcon={() => Icon}
             size={80}
