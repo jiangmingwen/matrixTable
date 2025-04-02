@@ -30,6 +30,7 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
   emptyColHeaderText = '列表头为空',
   emptyDataText,
   emptyRowHeaderText = '行表头为空',
+  checkboxActiveColor = '#1890ff',
   ref
 }) => {
   const domRef = useRef<HTMLDivElement | null>(null)
@@ -120,6 +121,7 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
     options.emptyColHeaderText = emptyColHeaderText
     options.emptyDataText = emptyDataText
     options.emptyRowHeaderText = emptyRowHeaderText
+    options.checkboxActiveColor = checkboxActiveColor
 
     const { data, rowData, colData } = getS2Data(colHeaders, rowHeaders, options, dom)
 

@@ -97,8 +97,8 @@ function App() {
             size={80}
             renderCell={(rowKey, colKey) => {
               return {
-                type: 'text',
-                value: `${rowKey}__${colKey}`,
+                type: 'checkbox',
+                value: true,
               }
               // if (rowKey === 'row0') {
               //   return {

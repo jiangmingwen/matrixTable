@@ -10,6 +10,7 @@ export class MatrixDataCell extends DataCell {
 
     private checkedValue: boolean = false;
 
+
     private getCheckboxSize() {
         const { x, y, width } = this.getBBoxByType(CellClipBox.CONTENT_BOX);
         const size = 12;
@@ -45,10 +46,19 @@ export class MatrixDataCell extends DataCell {
             },
         });
 
+        rect.on('mouseenter',()=> {
+            console.log('123')
+            rect.style.stroke = '#fff'
+        })
 
+        rect.on('mouseleave',()=> {
+            rect.style.stroke = '#333'
+        })
+
+        let polyline:Polyline|undefined 
         if (checked) {
             // 绘制checkbox的勾勾
-            const polyline = new Polyline({
+             polyline = new Polyline({
                 style: {
                     points: points,
                     stroke: '#333',
@@ -57,6 +67,21 @@ export class MatrixDataCell extends DataCell {
             });
             rect.appendChild(polyline);
         }
+
+        rect.on('mouseenter',()=> {
+            rect.style.stroke = (this.spreadsheet.options as IS2Options).checkboxActiveColor
+            if(polyline){
+                polyline.style.stroke = (this.spreadsheet.options as IS2Options).checkboxActiveColor
+            }
+        })
+
+        rect.on('mouseleave',()=> {
+            rect.style.stroke = '#333'
+            if(polyline){
+                polyline.style.stroke = '#333'
+            }
+        })
+
         rect.on('click', (e: FederatedPointerEvent) => {
             (this.spreadsheet.options as IS2Options).onCheck?.(...getCellKeys(this.meta as unknown as Node), !this.checkedValue, () => {
                 e.stopPropagation()

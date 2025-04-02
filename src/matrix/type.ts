@@ -204,6 +204,8 @@ export interface ICustomOptions {
      * 不配置则为 shape  x 填充
      */
     emptyDataText?: string
+    /** checkbox选中颜色 */
+    checkboxActiveColor?: string
 }
 
 export interface IS2Options extends S2Options, ICustomOptions {
