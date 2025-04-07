@@ -1,6 +1,7 @@
 import { FederatedPointerEvent } from "@antv/g"
 import { CellType, S2Options, SpreadSheet } from "@antv/s2"
 import { ReactNode } from "react"
+import { CollaberateCell } from "./CollaberateCell"
 
 
 export enum MatrixField {
@@ -145,7 +146,20 @@ export interface IMatrixCanvasProps extends ICustomOptions {
 }
 
 export interface IMatrixCanvasInstance {
+    /** 导出 */
     export: () => Promise<IImageInfo[]>
+    /** 获取文本大小 */
+    getTextSize: (text: string, fontSize: number) => { width: number, height: number }
+    /** 滚动到位置 */
+    scrollTo: (rowKey?: string, colKey?: string) => void
+    /** 高亮表头 */
+    hignlightHeader: (rowKey?: string, colKey?: string, color?: string) => void
+    /** 设定协同单元格 */
+    setCollaberate: (rowKey: string, colKey: string, text: string) => void
+    /** 取消协同单元格 */
+    cancelCollaberate: (rowKey: string, colKey: string) => void
+    /** 取消所有的协同表示 */
+    cancelAllCollaberate: () => void
 }
 
 export interface ICustomOptions {
@@ -206,6 +220,8 @@ export interface ICustomOptions {
     emptyDataText?: string
     /** checkbox选中颜色 */
     checkboxActiveColor?: string
+    /** 协同单元格 */
+    __collaberateCell?: Record<string, CollaberateCell>
 }
 
 export interface IS2Options extends S2Options, ICustomOptions {

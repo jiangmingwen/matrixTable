@@ -84,35 +84,55 @@ function App() {
 
       }} >清空列</button>
       <button onClick={() => {
-        instance.current?.export().then(res=> {
-          console.log(res,'xx')
+        instance.current?.export().then(res => {
+          console.log(res, 'xx')
         })
       }} >导出</button>
+
+      <button onClick={() => {
+        instance.current?.scrollTo('row8-3')
+      }} >滚动到行</button>
+      <button onClick={() => {
+        instance.current?.scrollTo(undefined, 'col7-3')
+      }} >滚动到列</button>
+      <button onClick={() => {
+        instance.current?.scrollTo('row8-3', 'col7-3')
+      }} >滚动到行列</button>
+      <button onClick={() => {
+        instance.current?.hignlightHeader(undefined, 'col7-3')
+      }} >高亮</button>
+
+      <button onClick={() => {
+        instance.current?.setCollaberate('row0-14-1', 'col0-11', '小明')
+      }}>设定协同单元格</button>
+
+      <button onClick={() => {
+        instance.current?.cancelCollaberate('row0-14-1', 'col0-11')
+      }}>取消协同</button>
+
       <div style={{ width: '100vw', height: '100vh', display: 'flex' }}>
         <div style={{ width: "1000px", height: "500px" }}>
           <MatrixCanvas colHeaders={cols}
-          ref={instance}
+            ref={instance}
             rowHeaders={rows}
             renderHeaderIcon={() => Icon}
-            size={80}
+            size={40}
+            showCount={false}
             renderCell={(rowKey, colKey) => {
-              return {
-                type: 'checkbox',
-                value: true,
-              }
+
               // if (rowKey === 'row0') {
-              //   return {
-              //     type: 'empty',
-              //     disabled: true
-              //   }
+              // return {
+              //   type: 'empty',
+              //   disabled: true
+              // }
               // }
 
               // if (rowKey === 'row0-1') {
-              //   return {
-              //     type: 'image',
-              //     value: [Icon, Icon],
-              //     disabled: true
-              //   }
+              // return {
+              //   type: 'image',
+              //   value: [Icon, Icon],
+              //   disabled: true
+              // }
               // }
 
               // if (rowKey === 'row1') {
@@ -121,10 +141,11 @@ function App() {
               //     disabled: false
               //   }
               // }
-              // return {
-              //   type: 'checkbox',
-              //   value: checredf.current[`${rowKey}__${colKey}`] ?? false
-              // }
+              return {
+                type: 'checkbox',
+                value: checredf.current[`${rowKey}__${colKey}`] ?? false,
+                disabled: true
+              }
             }}
             renderCount={(k, c, r) => {
               if (r) {
@@ -135,14 +156,21 @@ function App() {
 
             renderCornerCell={() => {
               return {
-                type:'custom',
-                renderFn: (w,h)=>{
+                type: 'custom',
+                renderFn: (w, h) => {
                   return [
                     {
                       type: 'text',
-                      data: '123',
-                      x: w/2,
-                      y: h/2,
+                      data: '大撒大撒大撒',
+                      x: w / 2 - (instance.current?.getTextSize('大撒大撒大撒', 16).width ?? 0) / 2,
+                      y: h / 2,
+                      size: 16
+                    },
+                    {
+                      type: 'icon',
+                      data: Icon,
+                      x: w / 2 - 15,
+                      y: h / 2 - 15,
                       size: 30
                     }
                   ]
@@ -152,7 +180,7 @@ function App() {
 
             tooltip={
               (_r, _k) => {
-                return '123'
+                return 'dsad'
               }
             }
             onCheck={(r, c, v, u) => {
@@ -178,7 +206,7 @@ function App() {
           ></MatrixCanvas>
         </div>
       </div>
-        <div style={{ height: '100%'}} id="addix"></div>
+      <div style={{ height: '100%' }} id="addix"></div>
     </>
   )
 }

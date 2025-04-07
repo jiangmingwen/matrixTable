@@ -36,6 +36,18 @@ export class MatrixRowCell extends RowCell {
         return !!(this.spreadsheet.options as IS2Options).showCount
     }
 
+   
+    hignlight(color?: string){
+        this.textShapes.forEach((text) => {
+            text.attr('fill',color?? EmptyTextColor)
+        })
+    }
+
+    hideHignlight(){
+        this.textShapes.forEach((text) => {
+            text.attr('fill', this.spreadsheet.theme.rowCell.text.fill)
+        })
+    }
 
     private drawText(headerData: IHeaderData, width: number, height: number, _x: number, y: number) {
         // 文字的个数
@@ -75,6 +87,7 @@ export class MatrixRowCell extends RowCell {
                 },
             });
             this.appendChild(text);
+            this.textShapes.push(text as any) 
         }
 
         if (textCount < headerData.title.length - 1) {
@@ -89,6 +102,7 @@ export class MatrixRowCell extends RowCell {
                     textBaseline: 'initial'
                 },
             });
+            this.textShapes.push(text as any) 
             this.appendChild(text);
         }
 

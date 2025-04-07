@@ -1,14 +1,44 @@
-import { InteractionStateName, PivotSheet, S2CellType, S2DataConfig, S2Event, ViewMeta, Node, CellType, InteractionName, DataCell } from "@antv/s2";
+import { InteractionStateName, PivotSheet, S2CellType, S2DataConfig, S2Event, ViewMeta, Node, CellType, InteractionName, DataCell, ScrollOffsetConfig } from "@antv/s2";
 import { FC, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import { MatrixDataCell } from "./DataCell";
-import { IImageInfo, IMatrixCanvasProps, IS2Options, MatrixField } from "./type";
+import { IDataType, IImageInfo, IMatrixCanvasProps, IS2Options, MatrixField } from "./type";
 import { MatrixColCell } from "./ColCell";
 import { MatrixRowCell } from "./RowCell";
-import { EmptyKey, getCellKey, getCellKeys, getS2Data, showTooltip } from "./config";
+import { EmptyKey, getCellKey, getCellKeys, getS2Data, getS2Key, showTooltip } from "./config";
 import { MatrixCornerHeader } from "./CornerCell";
-import { FederatedMouseEvent, FederatedPointerEvent } from "@antv/g";
+import { FederatedMouseEvent, FederatedPointerEvent, Text } from "@antv/g";
 import { Exporter } from "./export";
-
+import { CollaberateCell } from "./CollaberateCell";
+/**
+ * A React component that renders a matrix-style table using AntV S2.
+ * Supports customizable headers, cell rendering, interactions and styling.
+ * 
+ * @param {Object} props
+ * @param {number} [props.size=40] - Size of cells in pixels
+ * @param {Array} props.colHeaders - Column headers data
+ * @param {number} props.cellIconSize - Size of icons in cells
+ * @param {Array} props.rowHeaders - Row headers data
+ * @param {boolean} [props.showCount=true] - Whether to show count numbers
+ * @param {number} [props.rowHeaderSize=120] - Size of row headers
+ * @param {number} [props.colHeaderSize=120] - Size of column headers
+ * @param {Function} props.renderHeaderIcon - Custom header icon renderer
+ * @param {Function} props.onContextMenu - Context menu handler
+ * @param {Function} props.onColSelect - Column selection handler
+ * @param {Function} props.onRowSelect - Row selection handler
+ * @param {Function} props.onDataSelect - Data cell selection handler
+ * @param {Function} props.renderCornerCell - Custom corner cell renderer
+ * @param {Function} props.renderCell - Custom cell renderer
+ * @param {Function} props.renderCount - Custom count renderer
+ * @param {Function} props.onCheck - Checkbox handler
+ * @param {Object} props.tooltip - Tooltip configuration
+ * @param {string} [props.emptyColHeaderText='列表头为空'] - Text for empty column header
+ * @param {string} props.emptyDataText - Text for empty data cell
+ * @param {string} [props.emptyRowHeaderText='行表头为空'] - Text for empty row header
+ * @param {string} [props.checkboxActiveColor='#1890ff'] - Color for active checkbox
+ * @param {React.Ref} props.ref - Ref for imperative methods
+ * 
+ * @returns {JSX.Element} Matrix table component
+ */
 export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
   size = 40,
   colHeaders,
@@ -35,7 +65,7 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
 }) => {
   const domRef = useRef<HTMLDivElement | null>(null)
   const s2Instance = useRef<PivotSheet | null>(null)
-
+  const listRef = useRef<{ cols: IDataType[], rows: IDataType[] }>({ cols: [], rows: [] })
 
   const getS2Config = useCallback((dom: HTMLDivElement) => {
 
@@ -84,7 +114,7 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
           headerData: colData[v.value],
           onCollpase: (_e, sheet) => {
             const sheetOptions = sheet.options as IS2Options
-            const { data } = getS2Data(colHeaders, rowHeaders, sheetOptions, dom)
+            const { data } = getS2Data(colHeaders, rowHeaders, sheetOptions, dom, listRef.current)
             sheet.setDataCfg({
               data: data as any
             })
@@ -96,7 +126,7 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
         headerData: rowData[v.value],
         onCollpase: (_e, sheet) => {
           const sheetOptions = sheet.options as IS2Options
-          const { data } = getS2Data(colHeaders, rowHeaders, sheetOptions, dom)
+          const { data } = getS2Data(colHeaders, rowHeaders, sheetOptions, dom, listRef.current)
           sheet.setDataCfg({
             data: data as any
           })
@@ -123,8 +153,7 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
     options.emptyRowHeaderText = emptyRowHeaderText
     options.checkboxActiveColor = checkboxActiveColor
 
-    const { data, rowData, colData } = getS2Data(colHeaders, rowHeaders, options, dom)
-
+    const { data, rowData, colData } = getS2Data(colHeaders, rowHeaders, options, dom, listRef.current)
 
     // 配置数据
     const config: S2DataConfig = {
@@ -165,6 +194,7 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
       }
       const selectFn = (cells: S2CellType[]) => {
         const cell = cells[0]
+
         if (!cell) return
         const cellMeta = cell.getMeta() as unknown as ViewMeta
         if (cell instanceof MatrixColCell) {
@@ -257,6 +287,21 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
       if (!!onContextMenu) {
         s2.on(S2Event.GLOBAL_CONTEXT_MENU, contextFn)
       }
+      const resetFn = () => {
+        onDataSelect?.([])
+      }
+      s2.on(S2Event.GLOBAL_RESET, resetFn)
+      const scrollFn =  () => {
+        const s2Opt = s2.options as IS2Options
+        for (let key in s2Opt.__collaberateCell) {
+          const value = s2Opt.__collaberateCell[key]
+          value.remove()
+          value.show()
+
+        }
+      }
+
+      s2.on(S2Event.GLOBAL_SCROLL,scrollFn)
 
       s2.render();
       s2Instance.current = s2;
@@ -270,6 +315,8 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
           domRef.current?.removeEventListener('contextmenu', defaultContextPreventFn)
           s2.off(S2Event.GLOBAL_CONTEXT_MENU, contextFn)
         }
+        s2.off(S2Event.GLOBAL_RESET, resetFn)
+        s2.off(S2Event.GLOBAL_SCROLL,scrollFn)
       }
     }
   }, [])
@@ -289,12 +336,117 @@ export const MatrixCanvas: FC<IMatrixCanvasProps> = ({
       return new Promise<IImageInfo[]>((resolve) => {
         if (!s2Instance.current) resolve([])
         const exporter = new Exporter(s2Instance.current!)
-        exporter.export(cb=> {
+        exporter.export(cb => {
           resolve(cb.toImageList())
         })
       })
     },
-  }))
+    getTextSize: (text: string, fontSize: number) => {
+      const textShape = new Text({
+        style: {
+          x: 0,
+          y: 0,
+          ...s2Instance.current?.theme.cornerCell.text,
+          fontSize: fontSize ?? s2Instance.current?.theme.cornerCell.text.fontSize,
+          text,
+          maxLines: 1,
+          textAlign: 'initial',
+        },
+      });
+      return {
+        width: textShape.getBBox().width,
+        height: textShape.getBBox().height
+      }
+    },
+    scrollTo: (rowKey?: string, colKey?: string) => {
 
+      const scrollInfo: ScrollOffsetConfig = {
+        skipScrollEvent: true,
+        offsetX: { value: 0 },
+        offsetY: { value: 0 }
+      }
+
+      if (rowKey && colKey) {
+        const rowIndex = listRef.current.rows.findIndex((item) => item.key === rowKey)
+        const colIndex = listRef.current.cols.findIndex((item) => item.key === colKey)
+        scrollInfo.offsetX!.value = colIndex * size
+        scrollInfo.offsetY!.value = rowIndex * size
+      } else if (rowKey && !colKey) {
+        const rowIndex = listRef.current.rows.findIndex((item) => item.key === rowKey)
+        scrollInfo.offsetX = undefined
+        scrollInfo.offsetY!.value = rowIndex * size
+      } else if (!rowKey && colKey) {
+        const colIndex = listRef.current.cols.findIndex((item) => item.key === colKey)
+        scrollInfo.offsetY = undefined
+        scrollInfo.offsetX!.value = colIndex * size
+      }
+      s2Instance.current?.interaction.scrollTo(scrollInfo)
+    },
+    hignlightHeader: (rowKey?: string, colKey?: string, color?: string) => {
+      const colNode = s2Instance.current?.facet.getColCells().find((item) => item.getMeta().value === colKey)
+      if (colNode) {
+        const cell = colNode as MatrixColCell
+        cell.hignlight(color)
+      }
+      const rowNode = s2Instance.current?.facet.getRowCells().find((item) => item.getMeta().value === rowKey)
+      if (rowNode) {
+        const cell = rowNode as MatrixRowCell
+        cell.hignlight(color)
+      }
+    },
+    hideHighlight: (rowKey?: string, colKey?: string) => {
+      const colNode = s2Instance.current?.facet.getColCells().find((item) => item.getMeta().value === colKey)
+      if (colNode) {
+        const cell = colNode as MatrixColCell
+        cell.hideHignlight()
+      }
+      const rowNode = s2Instance.current?.facet.getRowCells().find((item) => item.getMeta().value === rowKey)
+      if (rowNode) {
+        const cell = rowNode as MatrixRowCell
+        cell.hideHignlight()
+      }
+    },
+    setCollaberate(rowKey, colKey, text) {
+      const rowIndex = listRef.current.rows.findIndex((item) => item.key === rowKey)
+      const colIndex = listRef.current.cols.findIndex((item) => item.key === colKey)
+      if (rowIndex < 0 || colIndex < 0) return
+      const cornerHeader = s2Instance.current?.facet.cornerHeader
+      if (!cornerHeader) return
+      const options = s2Instance.current?.options as IS2Options
+      if (!options) return
+      options.__collaberateCell = options.__collaberateCell ?? {}
+
+      const dataCell = s2Instance.current?.facet.getCellById(getS2Key(rowKey, colKey, showCount)) as MatrixDataCell
+
+      if (dataCell) {
+        const cell = new CollaberateCell(s2Instance.current!, text, rowKey, colKey)
+        options.__collaberateCell[`${rowKey}__${colKey}`] = cell
+        cell.show()
+      }
+
+    },
+    cancelCollaberate(rowKey, colKey) {
+      const options = s2Instance.current?.options as IS2Options
+      if (!options || !options.__collaberateCell) return
+
+
+      const cell = options.__collaberateCell[`${rowKey}__${colKey}`]
+      if (cell) {
+        cell.remove()
+        delete options.__collaberateCell[`${rowKey}__${colKey}`]
+      }
+    },
+    cancelAllCollaberate() {
+      const options = s2Instance.current?.options as IS2Options
+      if (!options) return
+      for (let key in options.__collaberateCell) {
+        const cell = options.__collaberateCell[key]
+        if (cell) {
+          cell.remove()
+        }
+      }
+      options.__collaberateCell = {}
+    },
+  }))
   return <div style={{ width: '100%', height: '100%' }} ref={domRef}></div>
 }

@@ -42,11 +42,12 @@ function getColData(cols: IDataType[], collapseMap: Record<string, boolean>) {
 }
 
 
-export function getS2Data(cols: IDataType[], rows: IDataType[], options: IS2Options, parentDom: HTMLElement) {
+export function getS2Data(cols: IDataType[], rows: IDataType[], options: IS2Options, parentDom: HTMLElement,listRef:{rows: IDataType[],cols: IDataType[]}) {
     const data: IDataCellValue[] = []
     const { newCols, colData } = getColData(cols, options.colCollapseKeyMap!)
     const { newCols: newRows, colData: rowData } = getColData(rows, options.rowCollapseKeyMap!)
-    console.log(newCols.length, newRows.length,'newRows.length')
+    listRef.rows = newRows
+    listRef.cols = newCols
     if (newCols.length === 0 && newRows.length === 0) {
         // 行列表头都不存在
         data.push({
@@ -62,7 +63,6 @@ export function getS2Data(cols: IDataType[], rows: IDataType[], options: IS2Opti
                 [MatrixField.RowCountField]: row.key,
                 [MatrixField.RowField]: row.key,
             })
-            rowData[row.key].title = i +rowData[row.key].title 
         })
     } else if (newCols.length > 0 && newRows.length === 0) {
         //列表头存在，行表头不存在
@@ -72,25 +72,19 @@ export function getS2Data(cols: IDataType[], rows: IDataType[], options: IS2Opti
                 [MatrixField.RowCountField]: EmptyKey,
                 [MatrixField.RowField]: EmptyKey,
             })
-            colData[col.key].title = i +colData[col.key].title 
         })
     } else {
       
         // 行列表头都存在 
         for (let i = 0; i < newCols.length; i++) {
-            colData[newCols[i].key].title = i +colData[newCols[i].key].title
             for (let j = 0; j < newRows.length; j++) {
                 data.push({
                     [MatrixField.ColunmField]: newCols[i].key,
                     [MatrixField.RowField]: newRows[j].key,
                     [MatrixField.RowCountField]: newRows[j].key
                 })
-                rowData[newRows[j].key].title = j +rowData[newRows[j].key].title
-                
             }
         }
-        console.log('Total Count',newCols.length*newRows.length)
-
     }
 
     options.width = getTableSize(parentDom.clientWidth, window.innerWidth, newCols.length, options.size!, options.showCount!, options.rowHeaderSize!)
@@ -113,6 +107,15 @@ export function getTableSize(_wrapperSize: number, defaultSize: number, count: n
     } else {
         const calcWidth = headerSize + (count + (isShowCount ? 1 : 0)) * cellSize
         return calcWidth > wrapperSize ? wrapperSize : calcWidth
+    }
+}
+
+/** 获取单元的key */
+export function getS2Key(rowKey: string,colKey: string,showCount?: boolean){
+    if(showCount){
+        return `root[&]${rowKey}[&]${rowKey}-root[&]${colKey}[&]${MatrixField.ValueField}`
+    }else {
+        return `root[&]${rowKey}-root[&]${colKey}`
     }
 }
 
@@ -176,3 +179,4 @@ export function showTooltip(s2: PivotSheet, event: FederatedMouseEvent, tooltip?
         content: domNode,
     });
 }
+

@@ -27,6 +27,18 @@ export class MatrixColCell extends ColCell {
         return this.meta.extra.mountData?.onCollpase as (e: FederatedPointerEvent,spreadsheet: SpreadSheet) => void
     }
 
+    hignlight(color?: string){
+        this.textShapes.forEach((text) => {
+            text.attr('fill',color?? EmptyTextColor)
+        })
+    }
+
+    hideHignlight(){
+        this.textShapes.forEach((text) => {
+            text.attr('fill', this.spreadsheet.theme.rowCell.text.fill)
+        })
+    }
+
     get isCollapse() {
         return !!(this.spreadsheet.options as IS2Options).colCollapseKeyMap![this.meta.value]
     }
@@ -74,6 +86,7 @@ export class MatrixColCell extends ColCell {
                 },
             });
             this.appendChild(text);
+            this.textShapes.push(text as any) 
         }
 
         if (textCount < headerData.title.length) {
@@ -89,6 +102,7 @@ export class MatrixColCell extends ColCell {
                 },
             });
             this.appendChild(text);
+            this.textShapes.push(text as any)
         }
 
     }

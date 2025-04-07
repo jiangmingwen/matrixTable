@@ -1,15 +1,18 @@
-import {  CellClipBox,  DataCell, Node, SpreadSheet, ViewMeta } from "@antv/s2";
+import { CellClipBox, DataCell, Node, SpreadSheet, ViewMeta } from "@antv/s2";
 import { FederatedPointerEvent, Image, Line, Polyline, Rect, Text } from '@antv/g';
-import {  IS2Options, IValueCell  } from "./type";
+import { IS2Options, IValueCell } from "./type";
 import { EmptyKey, EmptyTextColor, getCellKeys } from "./config";
 
 export class MatrixDataCell extends DataCell {
     constructor(viewMeta: ViewMeta, spreadsheet: SpreadSheet) {
         super(viewMeta, spreadsheet);
+        this.style.overflow = 'visible'
     }
 
     private checkedValue: boolean = false;
 
+
+    checkboxRect?: Rect
 
     private getCheckboxSize() {
         const { x, y, width } = this.getBBoxByType(CellClipBox.CONTENT_BOX);
@@ -28,7 +31,7 @@ export class MatrixDataCell extends DataCell {
         }
     }
 
-    private renderCheckBox(checked?: boolean) {
+    private renderCheckBox(checked?: boolean,disabled?: boolean) {
         const { x, y, width, points } = this.getCheckboxSize()
 
         // checkbox的矩形
@@ -43,22 +46,16 @@ export class MatrixDataCell extends DataCell {
                 stroke: '#333',
                 strokeWidth: 1,
                 cursor: 'pointer',
+                zIndex: 10
             },
         });
 
-        rect.on('mouseenter',()=> {
-            console.log('123')
-            rect.style.stroke = '#fff'
-        })
 
-        rect.on('mouseleave',()=> {
-            rect.style.stroke = '#333'
-        })
-
-        let polyline:Polyline|undefined 
+        this.checkboxRect = rect
+        let polyline: Polyline | undefined
         if (checked) {
             // 绘制checkbox的勾勾
-             polyline = new Polyline({
+            polyline = new Polyline({
                 style: {
                     points: points,
                     stroke: '#333',
@@ -68,21 +65,25 @@ export class MatrixDataCell extends DataCell {
             rect.appendChild(polyline);
         }
 
-        rect.on('mouseenter',()=> {
+        rect.on('mouseenter', () => {
+            if(disabled) return
             rect.style.stroke = (this.spreadsheet.options as IS2Options).checkboxActiveColor
-            if(polyline){
+            if (polyline) {
                 polyline.style.stroke = (this.spreadsheet.options as IS2Options).checkboxActiveColor
             }
         })
 
-        rect.on('mouseleave',()=> {
+        rect.on('mouseleave', () => {
+            if(disabled) return
             rect.style.stroke = '#333'
-            if(polyline){
+            if (polyline) {
                 polyline.style.stroke = '#333'
             }
         })
 
         rect.on('click', (e: FederatedPointerEvent) => {
+            // 左键触发
+            if (e.button !== 0) return
             (this.spreadsheet.options as IS2Options).onCheck?.(...getCellKeys(this.meta as unknown as Node), !this.checkedValue, () => {
                 e.stopPropagation()
                 // 重新绘制
@@ -133,7 +134,7 @@ export class MatrixDataCell extends DataCell {
 
 
 
-    private drawText(text: string, width: number, height: number, x: number, y: number,isEmpty?: boolean) {
+    private drawText(text: string, width: number, height: number, x: number, y: number, isEmpty?: boolean) {
         const fontSize = this.spreadsheet.theme.dataCell.text.fontSize
         let startX = 10;
         const textCount = Math.floor((width - startX * 2) / fontSize)
@@ -189,8 +190,8 @@ export class MatrixDataCell extends DataCell {
                 style: {
                     x1: x,
                     y1: y,
-                    x2: x+width,
-                    y2: y+height,
+                    x2: x + width,
+                    y2: y + height,
                     lineWidth: 1,
                     stroke: this.spreadsheet.theme.cornerCell.cell.horizontalBorderColor,
                 },
@@ -208,19 +209,21 @@ export class MatrixDataCell extends DataCell {
             });
             this.appendChild(line);
             this.appendChild(line2);
-        }else {
-            this.drawText(emptyText, width, height, x, y,true)
+        } else {
+            this.drawText(emptyText, width, height, x, y, true)
         }
 
     }
 
-
     override drawTextShape(): void {
+
         if (this.meta.id.includes(EmptyKey)) {
             // 渲染单元格为空的
             this.drawEmtpy()
             return
         }
+
+        // this.drawCollaberate()
         const renderCell = (this.spreadsheet.options as IS2Options)?.renderCell
         // 默认渲染
         if (renderCell == undefined || this.meta == undefined) {
@@ -234,11 +237,11 @@ export class MatrixDataCell extends DataCell {
 
         if (value.type == 'checkbox') {
             this.checkedValue = value.value
-            this.renderCheckBox(value.value)
+            this.renderCheckBox(value.value,value.disabled)
         } else if (value.type == 'image') {
             this.renderIcon(Array.isArray(value.value) ? value.value : [value.value])
         } else if (value.type == 'empty') {
-            
+
         } else {
             const { width, height, x, y } = this.getBBoxByType(CellClipBox.BORDER_BOX)
             this.drawText(value.value, width, height, x, y)
@@ -246,14 +249,18 @@ export class MatrixDataCell extends DataCell {
         if (value.disabled) {
             // @ts-ignore
             this.backgroundShape.setAttribute('fill', '#dadde1');
+            if(this.checkboxRect){
+                this.checkboxRect.style.cursor = 'not-allowed'
+            }
         } else {
             // @ts-ignore
             this.backgroundShape.setAttribute('fill', '#fff');
+            if(this.checkboxRect){
+                this.checkboxRect.style.cursor = 'pointer'
+            }
 
         }
     }
-
-
 
 
 } 
